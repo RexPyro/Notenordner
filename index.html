@@ -89,7 +89,7 @@ function section(id, title, count, body, forceOpen, cls = '') {
 function render() {
   if (!DATA) return;
   const q = norm(qEl.value.trim());
-  sortBtn.innerHTML = `Sortierung<small>${sortMode === 'nr' ? 'nach Nummer' : 'alphabetisch'}<br> · tippen zum Wechseln</small>`;
+  sortBtn.innerHTML = `Sortierung<small>${sortMode === 'nr' ? 'nach Nummer' : 'alphabetisch'}<br>Tippen zum Wechseln</small>`;
   let html = '';
 
   // 1) Festprogramm-PDF
