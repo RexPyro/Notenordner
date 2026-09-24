@@ -101,7 +101,7 @@ function render() {
   const prog = DATA.programm.map(p => ({...p, s: byCode[p.code]})).filter(p => p.s && matches(p.s, q));
   if (!q || prog.length) {
     const rows = prog.map(p => `<li><span class="nr">${p.nr}</span><span class="t">${hl(p.s.titel, q)}</span><button class="code" data-goto="${p.code}" type="button">${hl(p.code, q)}</button></li>`).join('');
-    html += section('prog', 'Aktuelles Programm', prog.length, `<ol>${rows}</ol>`, q ? true : undefined);
+    html += section('prog', 'Aktuelles Sommerprogramm', prog.length, `<ol>${rows}</ol>`, q ? true : undefined);
   }
 
   // 3) Kategorien
