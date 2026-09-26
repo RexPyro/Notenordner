@@ -14,7 +14,7 @@ box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:en
 *{box-sizing:border-box}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
-main{max-width:640px;margin:0 auto;padding:12px;padding-bottom:76px}
+main{max-width:640px;margin:0 auto;padding:12px}
 .bar{display:flex;gap:8px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:8px 0;z-index:5}
 input,button.sort{font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--ink);border-radius:8px;padding:11px 12px}
 input{flex:1;min-width:0}
@@ -44,7 +44,8 @@ li.flash{animation:fl 1.6s}
 .pdfbody a{font-weight:600}
 .pdfbody iframe{width:100%;height:60vh;border:1px solid var(--line);border-radius:6px;margin-top:10px;background:#fff}
 .empty{text-align:center;color:var(--mute);padding:24px 0}
-.themebtn{position:fixed;right:calc(14px + env(safe-area-inset-right,0px));bottom:calc(14px + env(safe-area-inset-bottom,0px));z-index:6;display:flex;align-items:center;justify-content:center;gap:7px;height:46px;min-width:46px;padding:0 13px;font:inherit;font-weight:600;font-size:14px;color:var(--ink);background:var(--card);border:2px solid var(--ink);border-radius:10px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.themewrap{display:flex;justify-content:flex-end;margin:14px 0 4px}
+.themebtn{display:flex;align-items:center;justify-content:center;gap:7px;height:46px;min-width:46px;padding:0 13px;font:inherit;font-weight:600;font-size:14px;color:var(--ink);background:var(--card);border:2px solid var(--ink);border-radius:10px;cursor:pointer}
 .themebtn.icononly{padding:0;width:46px;font-size:19px}
 @media (prefers-reduced-motion:reduce){summary::after{transition:none}li.flash{animation:none;background:var(--mark)}}
 </style>
@@ -56,7 +57,7 @@ li.flash{animation:fl 1.6s}
     <button id="sortBtn" class="sort" type="button"></button>
   </div>
   <div id="root"></div>
-  <button id="themeBtn" class="themebtn" type="button"></button>
+  <div class="themewrap"><button id="themeBtn" class="themebtn" type="button"></button></div>
 </main>
 
 
