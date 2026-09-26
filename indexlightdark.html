@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Notenarchiv</title>
+<script>try{const t=localStorage.getItem('theme');if(t)document.documentElement.dataset.theme=t;}catch(e){}</script>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:wght@400;600&display=swap">
+<style>
+:root{--bg:#f2f4f7;--card:#fff;--ink:#1b2430;--mute:#66707d;--line:#cfd5dd;--acc:#3a47c9;--mark:#ffe27a;--code:#8a6317;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141a22;--card:#1d2530;--ink:#e8ecf1;--mute:#93a0af;--line:#33404f;--acc:#8b95ff;--mark:#6b5a12;--code:#e0b968}}
+:root[data-theme="dark"]{--bg:#141a22;--card:#1d2530;--ink:#e8ecf1;--mute:#93a0af;--line:#33404f;--acc:#8b95ff;--mark:#6b5a12;--code:#e0b968}
+*{box-sizing:border-box}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",sans-serif}
+main{max-width:640px;margin:0 auto;padding:12px}
+.bar{display:flex;gap:8px;position:sticky;top:env(safe-area-inset-top,0px);background:var(--bg);padding:8px 0;z-index:5}
+input,button.sort{font:inherit;color:var(--ink);background:var(--card);border:2px solid var(--ink);border-radius:8px;padding:11px 12px}
+input{flex:1;min-width:0}
+button.sort{white-space:nowrap;cursor:pointer;text-align:left;line-height:1.2;font-size:14px}
+button.sort small{display:block;color:var(--mute);font-size:12px}
+:focus-visible{outline:3px solid var(--acc);outline-offset:2px}
+details{background:var(--card);border:2px solid var(--ink);border-radius:8px;margin:10px 0}
+details.pdf{border-color:var(--acc)}
+summary{list-style:none;cursor:pointer;padding:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:600}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"";width:9px;height:9px;border:solid var(--ink);border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .2s;flex:none;margin-right:4px}
+details[open]>summary::after{transform:rotate(-135deg)}
+details.pdf summary,details.pdf a{color:var(--acc)}
+.cnt{color:var(--mute);font-weight:400;font-size:14px;margin-left:auto}
+ul,ol{list-style:none;margin:0;padding:0 0 6px;border-top:1px solid var(--line)}
+li{display:flex;gap:12px;align-items:baseline;padding:9px 14px;border-bottom:1px solid var(--line)}
+li:last-child{border-bottom:0}
+.code{font-weight:600;color:var(--code);min-width:3.6em;font-variant-numeric:tabular-nums;background:none;border:0;padding:0;font-size:inherit;text-align:left}
+button.code{cursor:pointer;text-decoration:underline;text-underline-offset:3px}
+.nr{color:var(--mute);min-width:2em;text-align:right;font-variant-numeric:tabular-nums}
+.t{font-family:"Source Serif 4",Georgia,serif;flex:1}
+.sub{display:block;color:var(--mute);font:13px system-ui,sans-serif}
+mark{background:var(--mark);color:inherit;border-radius:3px;padding:0 1px}
+li.flash{animation:fl 1.6s}
+@keyframes fl{0%,60%{background:var(--mark)}100%{background:transparent}}
+.pdfbody{padding:12px 14px;border-top:1px solid var(--line)}
+.pdfbody a{font-weight:600}
+.pdfbody iframe{width:100%;height:60vh;border:1px solid var(--line);border-radius:6px;margin-top:10px;background:#fff}
+.empty{text-align:center;color:var(--mute);padding:24px 0}
+.themebtn{display:block;width:100%;margin:16px 0 8px;padding:11px;font:inherit;font-weight:600;color:var(--ink);background:var(--card);border:2px solid var(--ink);border-radius:8px;cursor:pointer;text-align:center}
+@media (prefers-reduced-motion:reduce){summary::after{transition:none}li.flash{animation:none;background:var(--mark)}}
+</style>
+</head>
+<body>
+<main>
+  <div class="bar">
+    <input id="q" type="search" placeholder="Titel oder Nummer suchen (z. B. A12)" autocomplete="off" aria-label="Suche">
+    <button id="sortBtn" class="sort" type="button"></button>
+  </div>
+  <div id="root"></div>
+  <button id="themeBtn" class="themebtn" type="button"></button>
+</main>
+
+
+
+<script>
+let DATA, byCode;
+const $ = s => document.querySelector(s);
+const root = $('#root'), qEl = $('#q'), sortBtn = $('#sortBtn'), themeBtn = $('#themeBtn');
+
+function currentTheme() {
+  return document.documentElement.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+}
+function renderThemeBtn() {
+  themeBtn.textContent = currentTheme() === 'dark' ? '☀️ Heller Modus' : '🌙 Dunkler Modus';
+}
+themeBtn.addEventListener('click', () => {
+  const next = currentTheme() === 'dark' ? 'light' : 'dark';
+  document.documentElement.dataset.theme = next;
+  try { localStorage.setItem('theme', next); } catch (e) {}
+  renderThemeBtn();
+});
+renderThemeBtn();
+
+let sortMode = 'nr';            // 'nr' | 'az'
+const openSet = new Set();      // vom Nutzer geöffnete Bereiche (ohne Suche)
+
+// Hilfsfunktionen
+const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // ä -> a
+const sortKey = t => norm(t);   // Artikel zählen beim Sortieren mit
+const split = nr => [nr[0], parseInt(nr.slice(1), 10) || 0];
+const byNr = (a, b) => { const [l1, n1] = split(a.nr), [l2, n2] = split(b.nr); return l1 === l2 ? n1 - n2 : l1.localeCompare(l2); };
+const byAz = (a, b) => sortKey(a.titel).localeCompare(sortKey(b.titel), 'de');
+
+function hl(text, q) {
+  if (!q) return esc(text);
+  const i = norm(text).indexOf(q);
+  if (i < 0) return esc(text);
+  return esc(text.slice(0, i)) + '<mark>' + esc(text.slice(i, i + q.length)) + '</mark>' + esc(text.slice(i + q.length));
+}
+const matches = (s, q) => !q || norm(s.titel).includes(q) || norm(s.nr).includes(q) || norm(s.komponist || '').includes(q);
+
+function section(id, title, count, body, forceOpen, cls = '') {
+  const open = forceOpen ?? openSet.has(id);
+  return `<details data-id="${id}" class="${cls}" ${open ? 'open' : ''}><summary>${title}<span class="cnt">${count}</span></summary>${body}</details>`;
+}
+
+function render() {
+  if (!DATA) return;
+  const q = norm(qEl.value.trim());
+  sortBtn.innerHTML = `Sortierung<small>${sortMode === 'nr' ? 'nach Nummer' : 'alphabetisch'}<br>Tippen zum Wechseln</small>`;
+  let html = '';
+
+  // 1) Festprogramm-PDF
+  if (!q) {
+    html += section('pdf', 'Sortierung innerhalb eines Stückes (PDF)', '', `<div class="pdfbody"><a href="${esc(DATA.pdf)}" download>PDF herunterladen</a><div id="pdfslot"></div></div>`, undefined, 'pdf');
+  }
+
+  // 2) Aktuelles Programm
+  const prog = DATA.programm.map(p => ({...p, s: byCode[p.code]})).filter(p => p.s && matches(p.s, q));
+  if (!q || prog.length) {
+    const rows = prog.map(p => `<li><span class="nr">${p.nr}</span><span class="t">${hl(p.s.titel, q)}</span><button class="code" data-goto="${p.code}" type="button">${hl(p.code, q)}</button></li>`).join('');
+    html += section('prog', 'Aktuelles Sommerprogramm', prog.length, `<ol>${rows}</ol>`, q ? true : undefined);
+  }
+
+  // 3) Kategorien
+  let hits = prog.length;
+  DATA.kategorien.forEach(k => {
+    let items = DATA.stuecke.filter(s => s.nr[0] === k.buchstabe && matches(s, q));
+    if (q && !items.length) return;
+    hits += items.length;
+    items.sort(sortMode === 'nr' ? byNr : byAz);
+    const rows = items.map(s => `<li id="p-${s.nr}"><span class="code">${hl(s.nr, q)}</span><span class="t">${hl(s.titel, q)}${s.komponist ? `<span class="sub">${hl(s.komponist, q)}</span>` : ''}</span></li>`).join('');
+    html += section(k.buchstabe, `${k.buchstabe} – ${esc(k.name)}`, items.length, `<ul>${rows || '<li>Noch keine Stücke</li>'}</ul>`, q ? true : undefined);
+  });
+
+  if (q && !hits) html = '<p class="empty">Nichts gefunden.</p>';
+  root.innerHTML = html;
+}
+
+// Öffnen/Schließen merken (nur ohne Suche)
+root.addEventListener('toggle', e => {
+  if (qEl.value.trim()) return;
+  const id = e.target.dataset.id;
+  e.target.open ? openSet.add(id) : openSet.delete(id);
+  if (id === 'pdf') $('#pdfslot').innerHTML = e.target.open ? `<iframe src="${esc(DATA.pdf)}" title="Festprogramm"></iframe>` : '';
+}, true);
+
+// Klick auf Notensatz-Nummer im Programm -> springt zum Stück
+root.addEventListener('click', e => {
+  const b = e.target.closest('[data-goto]');
+  if (!b) return;
+  const code = b.dataset.goto;
+  qEl.value = '';
+  openSet.add(code[0]);
+  render();
+  const li = document.getElementById('p-' + code);
+  if (li) { li.scrollIntoView({block: 'center'}); li.classList.add('flash'); }
+});
+
+sortBtn.addEventListener('click', () => { if (!DATA) return; sortMode = sortMode === 'nr' ? 'az' : 'nr'; render(); });
+qEl.addEventListener('input', render);
+
+fetch('noten.json', {cache: 'no-cache'})
+  .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+  .then(d => { DATA = d; byCode = Object.fromEntries(d.stuecke.map(s => [s.nr, s])); render(); })
+  .catch(() => { root.innerHTML = '<p class="empty">noten.json konnte nicht geladen werden.<br>Die Seite muss über einen Webserver (z. B. GitHub Pages) geöffnet werden.</p>'; });
+</script>
+</body>
+</html>
